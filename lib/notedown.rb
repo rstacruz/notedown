@@ -6,6 +6,8 @@
 #   nd.to_html
 #
 class Notedown
+  FIRST_HEADING = 2
+
   attr_reader :parent
   attr_reader :children
 
@@ -28,8 +30,7 @@ class Notedown
   end
 
   def heading_level
-    level = 0
-    level += parent.heading_level  if parent
+    level = parent ? parent.heading_level : (FIRST_HEADING-1)
     level += 1  if heading?
     level
   end
