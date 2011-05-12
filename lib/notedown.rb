@@ -61,7 +61,7 @@ class Notedown
       types << :heading
     elsif text[-2..-1] =~ /[^\.]\./
       types << :paragraph
-    elsif text.match(/^-+$/)
+    elsif text.match(/^-{4,}$/)
       types << :hr
     else
       types << :item
