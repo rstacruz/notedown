@@ -1,29 +1,26 @@
+# Notedown markup.
+#
+# == Usage
+#
+#   nd = Notedown.parse("string here")
+#   nd.to_html
+#
 class Notedown
-  attr_reader :lines
   attr_reader :parent
+  attr_reader :children
+
+  autoload :Helpers, File.expand_path('../notedown/helpers', __FILE__)
+
+  include Helpers
 
   def self.parse(str)
     new(nil, '', str.strip.split("\n"))
   end
 
   def initialize(parent=nil, content='', lines=Array.new)
-    @content = content.strip
-    @lines   = lines
-    @parent  = parent
-  end
-
-  def to_html
-    self
-  end
-
-  def indexes(arr, &blk)
-    re = Array.new
-    arr.each_with_index { |item, i| re << i  if blk.call(item) }
-    re
-  end
-  
-  def level_of(str)
-    str.scan(/^ */).first.length
+    @content  = content.strip
+    @parent   = parent
+    @children = get_children(lines)
   end
 
   def empty?
@@ -37,49 +34,15 @@ class Notedown
     level
   end
 
-  def children
-    @children ||= begin
-      first_meat = @lines.reject { |l| l.strip.empty? }.first
-
-      if first_meat == nil
-        Array.new
-      else
-        indent = level_of(first_meat)
-
-        firsts = indexes(@lines) { |s| level_of(s) == indent && !s.strip.empty? }
-
-        sections = Array.new
-        (firsts+[0]).each_cons(2) { |line, next_line|
-          new_group = !! lines[line-1].to_s.strip.empty?
-          range     = line..(next_line-1)
-
-          sections << [lines[range], new_group]
-        }
-
-        groups = Array.new
-
-        sections.each { |(lines, new_group)|
-          groups << Notedown.new(self)  if groups.empty? || (new_group && !groups.last.empty?)
-          groups.last.children << Notedown.new(self, lines.shift, lines)
-        }
-
-        groups
-      end
-    end
-  end
-
+  # Returns the group types
   def group_types
-    all_include = lambda { |list, what|
-      list.select { |item| ! item.include?(what) }.empty?
-    }
-
     subtypes = children.map { |node| node.types }
 
     re = Array.new
 
     if subtypes.any?
       [:paragraph, :heading, :item].each do |type|
-        if all_include[subtypes, type]
+        if all_include?(subtypes, type)
           re << :"#{type}_group"
         end
       end
@@ -109,16 +72,12 @@ class Notedown
     types + group_types
   end
 
-  def type
-    types.join(' ')
-  end
-
   def text
     @content.gsub(/^[#] */, '').gsub(/:$/, '')
   end
 
   def inspect
-    s = "<%s> \"%s\"" % [type, text]
+    s = "<%s> \"%s\"" % [types.join('.'), text]
 
     ([s] + children.map { |l| "#{l.inspect.gsub(/^/, '  ')}" }).join("\n")
   end
@@ -166,4 +125,35 @@ class Notedown
       html
     end
   end
+
+private
+  def get_children(lines)
+    first_meat = lines.reject { |l| l.strip.empty? }.first
+
+    if first_meat == nil
+      Array.new
+    else
+      indent = level_of(first_meat)
+
+      firsts = indexes(lines) { |s| level_of(s) == indent && !s.strip.empty? }
+
+      sections = Array.new
+      (firsts+[0]).each_cons(2) { |line, next_line|
+        new_group = !! lines[line-1].to_s.strip.empty?
+        range     = line..(next_line-1)
+
+        sections << [lines[range], new_group]
+      }
+
+      groups = Array.new
+
+      sections.each { |(lines, new_group)|
+        groups << Notedown.new(self)  if groups.empty? || (new_group && !groups.last.empty?)
+        groups.last.children << Notedown.new(self, lines.shift, lines)
+      }
+
+      groups
+    end
+  end
+
 end
