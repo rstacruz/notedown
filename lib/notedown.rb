@@ -1,13 +1,15 @@
 class Notedown
   attr_reader :lines
+  attr_reader :parent
 
   def self.parse(str)
-    new('', str.strip.split("\n"))
+    new(nil, '', str.strip.split("\n"))
   end
 
-  def initialize(content='', lines=Array.new)
+  def initialize(parent=nil, content='', lines=Array.new)
     @content = content.strip
     @lines   = lines
+    @parent  = parent
   end
 
   def to_html
@@ -26,6 +28,13 @@ class Notedown
 
   def empty?
     children.empty?
+  end
+
+  def heading_level
+    level = 0
+    level += parent.heading_level  if parent
+    level += 1  if heading?
+    level
   end
 
   def children
@@ -50,8 +59,8 @@ class Notedown
         groups = Array.new
 
         sections.each { |(lines, new_group)|
-          groups << Notedown.new  if groups.empty? || (new_group && !groups.last.empty?)
-          groups.last.children << Notedown.new(lines.shift, lines)
+          groups << Notedown.new(self)  if groups.empty? || (new_group && !groups.last.empty?)
+          groups.last.children << Notedown.new(self, lines.shift, lines)
         }
 
         groups
@@ -87,13 +96,15 @@ class Notedown
       types << :group
     elsif @content[0] == '#'
       types << :heading
-    elsif ".".include?(text[-1])
+    elsif text[-2..-1] =~ /[^\.]\./
       types << :paragraph
     elsif text.match(/^-+$/)
       types << :hr
     else
       types << :item
     end
+
+    types << :bold  if @content[-1] == ':'
 
     types + group_types
   end
@@ -103,7 +114,7 @@ class Notedown
   end
 
   def text
-    @content.gsub(/^[#] */, '')
+    @content.gsub(/^[#] */, '').gsub(/:$/, '')
   end
 
   def inspect
@@ -114,6 +125,7 @@ class Notedown
 
   def paragraph?() types.include?(:paragraph) end
   def item?()      types.include?(:item) end
+  def bold?()      types.include?(:bold) end
   def heading?()   types.include?(:heading) end
   def hr?()        types.include?(:hr) end
   def group?()     types.include?(:group) end
@@ -123,6 +135,9 @@ class Notedown
   end
 
   def content_html
+    text = self.text
+    text = "<strong>#{text}</strong>"  if bold?
+
     if group?
       ""
     elsif paragraph?
@@ -130,7 +145,8 @@ class Notedown
     elsif item?
       "<li>#{text}</li>\n"
     elsif heading?
-      "<h2>#{text}</h2>\n"
+      n = heading_level
+      "<h#{n}>#{text}</h#{n}>\n"
     elsif hr?
       "<hr>\n"
     else
@@ -144,6 +160,8 @@ class Notedown
 
     if types.include?(:item_group)
       "<ul>\n#{html}\n</ul>\n"
+    elsif types.include?(:heading_group)
+      "<section>\n#{html}\n</section>\n"
     else
       html
     end
