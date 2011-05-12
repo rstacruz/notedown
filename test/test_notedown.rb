@@ -30,6 +30,5 @@ class NTest < Test::Unit::TestCase
     n = Notedown.parse(str)
     p n
     puts n.to_html
-    File.open('lol.html', 'w') { |f| f.write n.to_html.squeeze("\n") }
   end
 end
