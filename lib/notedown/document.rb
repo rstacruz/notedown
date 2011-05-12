@@ -13,5 +13,9 @@ class Document
   def to_html
     root.to_html
   end
+
+  def inspect
+    root.inspect
+  end
 end
 end
