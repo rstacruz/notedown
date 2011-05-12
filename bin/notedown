@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+require File.expand_path('../../lib/notedown', __FILE__)
+
+input = ARGF.read
+
+puts Notedown.parse(input).to_html
