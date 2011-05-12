@@ -53,13 +53,12 @@ class Notedown
 
   def types
     types = Array.new
-    types << :leaf  if children.empty?
 
     if @content.empty?
       types << :group
     elsif @content[0] == '#'
       types << :heading
-    elsif text[-2..-1] =~ /[^\.]\./
+    elsif text[-2..-1] =~ /[^\.]\./ || @content[0] == '%'
       types << :paragraph
     elsif text.match(/^-{4,}$/)
       types << :hr
@@ -67,13 +66,14 @@ class Notedown
       types << :item
     end
 
+    types << :leaf  if children.empty?
     types << :bold  if @content[-1] == ':'
 
     types + group_types
   end
 
   def text
-    @content.gsub(/^[#] */, '').gsub(/:$/, '')
+    @content.gsub(/^[#%] */, '').gsub(/:$/, '')
   end
 
   def inspect
