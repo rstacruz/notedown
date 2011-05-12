@@ -29,7 +29,7 @@ This is a perfectly-valid Notedown document:
 
       Anything else is a list item
       This is also a list item
-        This is a sub-item, because of it's indentation
+        This is a sub-item, because of its indentation
 
       You may group items by putting empty lines on them
 
@@ -52,7 +52,7 @@ This example translates to the following HTML:
   <li>Anything else is a list item</li>
   <li>This is also a list item
     <ul>
-      <li>This is a sub-item, because of it's indentation</li>
+      <li>This is a sub-item, because of its indentation</li>
     </ul>
   </li>
 </ul>
